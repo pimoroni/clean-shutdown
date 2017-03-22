@@ -1,12 +1,23 @@
 #!/bin/bash
 
-# Assigning value to trigger
+# Checking whether daemon should be active
+
+if [ $(grep "trigger_active" /etc/cleanshutd.conf) == "trigger_active=0" ]; then
+    exit 1
+else
+    daemon="on"
+fi
+
+# Assigning values to trigger
 
 if [ -f /etc/cleanshutd.conf ]; then
-    user_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
-    declare -i trigger_pin=$user_value
+    pin_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
+    delay_value=$(grep "trigger_delay" /etc/cleanshutd.conf | cut -c 15-)
+    declare -i trigger_pin=$pin_value
+    declare -i trigger_delay=$delay_value
 else
     declare -i trigger_pin=4
+    declare -i trigger_delay=5
 fi
 
 # Setting up pin as an input with pullup
@@ -19,13 +30,10 @@ sudo raspi-gpio set $trigger_pin ip pu
 
 # Monitoring trigger and calling shutdown
 
-daemon="on"
-
 while [ $daemon = "on" ]; do
     if [ $(sudo raspi-gpio get $trigger_pin | grep -c level=0) = 1 ]; then
-        echo "BCM $trigger_pin asserted low, system is shutdown down"
-        daemon="off"
-        sudo shutdown -h now
+        echo "BCM $trigger_pin asserted low, system shutdown in $trigger_delay minutes"
+        daemon="off" && sudo shutdown -h +$trigger_delay
     fi
 done
 
