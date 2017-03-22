@@ -3,21 +3,30 @@
 # Assigning value to trigger
 
 if [ -f /etc/cleanshutd.conf ]; then
-    user_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut c13-)
-    echo $user_value
+    user_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
+    declare -i trigger_pin=$user_value
 else
     declare -i trigger_pin=4
 fi
-# Setting up pin as output
 
-echo $trigger_pin > /sys/class/gpio/export
-echo in > /sys/class/gpio/gpio$trigger_pin/direction
-sleep 0.5
+# Setting up pin as an input with pullup
 
-while true ]; do
-    if [ $(</sys/class/gpio/gpio$trigger_pin/value) = 0 ]; then
+if ! command -v raspi-gpio > /dev/null; then
+    sudo apt-get update && sudo apt-get install raspi-gpio
+fi
+
+sudo raspi-gpio set $trigger_pin ip pu
+
+# Monitoring trigger and calling shutdown
+
+daemon="on"
+
+while [ $daemon = "on" ]; do
+    if [ $(sudo raspi-gpio get $trigger_pin | grep -c level=0) = 1 ]; then
         echo "BCM $trigger_pin asserted low, system is shutdown down"
+        daemon="off"
         sudo shutdown -h now
     fi
-    sleep 0.5
 done
+
+exit 0
