@@ -5,8 +5,8 @@
 # Required-Stop:     $remote_fs $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Cleanly shutdown Raspberry Pi
-# Description:       Shutdown triggered by trigger connected to GPIO
+# Short-Description: Monitoring GPIO shutdown trigger
+# Description:       Clean Shutdown from trigger connected to GPIO
 ### END INIT INFO
 
 # Do NOT "set -e"
