@@ -2,11 +2,12 @@
 
 # Assigning value to trigger
 
-user_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut c13-)
-echo $user_value
-
-int trigger_pin=4
-
+if [ -f /etc/cleanshutd.conf ]; then
+    user_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut c13-)
+    echo $user_value
+else
+    declare -i trigger_pin=4
+fi
 # Setting up pin as output
 
 echo $trigger_pin > /sys/class/gpio/export
