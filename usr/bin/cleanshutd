@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Assigning value to trigger
+
+user_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut c13-)
+echo $user_value
+
+int trigger_pin=4
+
+# Setting up pin as output
+
+echo $trigger_pin > /sys/class/gpio/export
+echo in > /sys/class/gpio/gpio$trigger_pin/direction
+sleep 0.5
+
+while true ]; do
+    if [ $(</sys/class/gpio/gpio$trigger_pin/value) = 0 ]; then
+        echo "BCM $trigger_pin asserted low, system is shutdown down"
+        sudo shutdown -h now
+    fi
+    sleep 0.5
+done
