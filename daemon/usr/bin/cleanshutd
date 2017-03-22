@@ -42,17 +42,17 @@ fi
 # Setting up pin as an input with pullup
 
 if ! command -v raspi-gpio > /dev/null; then
-    sudo apt-get update && sudo apt-get install raspi-gpio
+    apt-get update && apt-get install raspi-gpio
 fi
 
-sudo raspi-gpio set $trigger_pin ip pu
+raspi-gpio set $trigger_pin ip pu
 
 # Monitoring trigger and calling shutdown
 
 while [ $daemon = "on" ]; do
-    if [ $(sudo raspi-gpio get $trigger_pin | grep -c level=0) = 1 ]; then
+    if [ $(raspi-gpio get $trigger_pin | grep -c level=0) = 1 ]; then
         echo "BCM $trigger_pin asserted low, system shutdown in $trigger_delay minutes"
-        daemon="off" && sudo shutdown -h +$trigger_delay
+        daemon="off" && shutdown -h +$trigger_delay
     fi
 done
 
