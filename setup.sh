@@ -333,7 +333,7 @@ sleep 1
 success "\nAll done!\n"
 echo -e "Enjoy your new $productname!\n"
 
-if [ $promptreboot == "yes" ] || $ASK_TO_REBOOT; then
+if [ "$FORCE" != '-y' ]; then
     sysreboot
 fi
 
