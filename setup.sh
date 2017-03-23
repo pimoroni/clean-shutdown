@@ -328,7 +328,16 @@ sudo systemctl enable cleanshutd
 
 echo -e "\nCopying default config to /etc/"
 sudo cp ./daemon/etc/cleanshutd.conf /etc/
-sleep 1
+
+if [ "$FORCE" != '-y' ]; then
+    read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
+    if [ $bcmnumber -le 27 &>/dev/null ]; then
+        sudo sed -i "s|trigger_pin=.*$|trigger_pin=$bcmnumber|" /etc/cleanshutd.conf
+    else
+        warning "input not recognised as a valid BCM pin number!"
+        echo "edit /etc/cleanshutd.conf instead"
+    fi
+fi
 
 success "\nAll done!\n"
 echo -e "Enjoy your new $productname!\n"
