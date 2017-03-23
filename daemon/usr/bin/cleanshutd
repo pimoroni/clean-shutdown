@@ -55,7 +55,7 @@ raspi-gpio set $trigger_pin ip pu
 while [ $daemon = "on" ]; do
     if [ $(raspi-gpio get $trigger_pin | grep -c level=0) = 1 ]; then
         echo "BCM $trigger_pin asserted low, system shutdown in $shutdown_delay minutes"
-        daemon="off" && shutdown -h +shutdown_delay
+        daemon="off" && shutdown -h +$shutdown_delay
         sleep $polling_rate
     fi
 done
