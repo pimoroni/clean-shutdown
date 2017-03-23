@@ -335,8 +335,9 @@ if [ "$FORCE" != '-y' ]; then
     if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
         sudo sed -i "s|trigger_pin=.*$|trigger_pin=$bcmnumber|" /etc/cleanshutd.conf
     else
-        warning "\ninput not recognised as a valid BCM pin number!"
-        echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+        warning "\nInput not recognised as a valid BCM pin number!"
+        echo "Edit /etc/cleanshutd.conf manually to specify the correct pin"
+        echo "or you are on your own. "
     fi
 fi
 
