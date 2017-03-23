@@ -330,12 +330,13 @@ echo -e "\nCopying default config to /etc/"
 sudo cp ./daemon/etc/cleanshutd.conf /etc/
 
 if [ "$FORCE" != '-y' ]; then
+    echo
     read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
-    if [ $bcmnumber -le 27 &>/dev/null ]; then
+    if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
         sudo sed -i "s|trigger_pin=.*$|trigger_pin=$bcmnumber|" /etc/cleanshutd.conf
     else
-        warning "input not recognised as a valid BCM pin number!"
-        echo "edit /etc/cleanshutd.conf instead"
+        warning "\ninput not recognised as a valid BCM pin number!"
+        echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
     fi
 fi
 
@@ -344,6 +345,6 @@ echo -e "Enjoy your new $productname!\n"
 
 if [ "$FORCE" != '-y' ]; then
     sysreboot
-fi
+fi; echo
 
 exit 0
