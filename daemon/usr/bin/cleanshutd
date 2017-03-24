@@ -22,8 +22,10 @@ DISCLAIMER
 # Checking whether daemon should be active
 
 if [ $(grep -c "disable_cleanshutd=1" /boot/config.txt) -gt 0 ]; then
+    echo "cleanshutd is disabled in /boot/config.txt"
     exit 1
 elif [ $(grep -c "daemon_active=0" /etc/cleanshutd.conf) -gt 0 ]; then
+    echo "cleanshutd is disabled in /etc/cleanshutd.conf"
     exit 1
 else
     daemon="on"
@@ -53,6 +55,8 @@ fi
 raspi-gpio set $trigger_pin ip pu
 
 # Monitoring trigger and calling shutdown
+
+echo "monitoring BCM $trigger_pin"
 
 while [ $daemon = "on" ]; do
     if [ $(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT") = 1 ]; then
