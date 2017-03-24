@@ -39,10 +39,18 @@ sudo service cleanshutd restart
 
 ## Parameters
 
-`daemon_active` - this is a pretty hacky way to passify the daemon without needing to delve into the details of [systemd](https://www.freedesktop.org/wiki/Software/systemd/). Set to `0` to deactivate the daemon (technically the daemon will be started at boot time but it will do absolutely nothing). Set to `1` to reactivate.
+### `daemon_active`
 
-`shutdown_delay` - most of the time you probably want your Pi to shutdow as soon as the trigger occurred, but sometimmes, like with the Zero Lipo, once the battery warning has been detected you still got some life of the LiPo before it is necessary to shut it down (the warning is activated at 3.4V, but a protection circuit will completely cut off the supply at 3.0V). The unit here is expressed in minutes (`0`, the default means immediate shutdown).
+This is a pretty hacky way to passify the daemon without needing to delve into the details of [systemd](https://www.freedesktop.org/wiki/Software/systemd/). Set to `0` to deactivate the daemon (technically the daemon will be started at boot time but it will do absolutely nothing). Set to `1` to reactivate.
 
-`polling_rate` - this parameter determines how often the trigger is checked for. Normally a small, but reasonable value, like a second or 2 is adequate to detect a button press, but if you take the Zero Lipo example it really does not matter if the monitoring is more laxed, say every 30 seconds or so. There may be other use-cases where smaller or larger values are optimal, so there's a parameter you can if you finfd yourself in one. Units are in seconds here.
+### `shutdown_delay`
 
-`trigger_pin` - normally you'll set this up at install timme and won't need to change it, but... as we do, next week you might buy a nice shiny (Pimoroni) HAT or pHAT and find that the pin you had your clean shutdown trigger wired to is required by your new friend. Just move the trigger button to anoter pin and reboot! The unit used for this parameter is the bcm number of the pin (4 or above recommended, 0-3 have particularities that make them slightly less straightforward to use, though the daemon will happily monitor them, as long as you know what you're doing it's OK to use them).
+Most of the time you probably want your Pi to shutdow as soon as the trigger occurred, but sometimmes, like with the Zero Lipo, once the battery warning has been detected you still got some life of the LiPo before it is necessary to shut it down (the warning is activated at 3.4V, but a protection circuit will completely cut off the supply at 3.0V). The unit here is expressed in minutes (`0`, the default means immediate shutdown).
+
+### `polling_rate`
+
+This parameter determines how often the trigger is checked for. Normally a small, but reasonable value, like a second or 2 is adequate to detect a button press, but if you take the Zero Lipo example it really does not matter if the monitoring is more laxed, say every 30 seconds or so. There may be other use-cases where smaller or larger values are optimal, so there's a parameter you can if you finfd yourself in one. Units are in seconds here.
+
+### `trigger_pin`
+
+Normally you'll set this up at install timme and won't need to change it, but... as we do, next week you might buy a nice shiny (Pimoroni) HAT or pHAT and find that the pin you had your clean shutdown trigger wired to is required by your new friend. Just move the trigger button to anoter pin and reboot! The unit used for this parameter is the bcm number of the pin (4 or above recommended, 0-3 have particularities that make them slightly less straightforward to use, though the daemon will happily monitor them, as long as you know what you're doing it's OK to use them).
