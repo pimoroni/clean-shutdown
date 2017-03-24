@@ -21,9 +21,9 @@ DISCLAIMER
 
 # Checking whether daemon should be active
 
-if [ $(grep -c "disable_cleanshutd=1" /boot/config.txt) > 0 ]; then
+if [ $(grep -c "disable_cleanshutd=1" /boot/config.txt) -gt 0 ]; then
     exit 1
-elif [ $(grep -c "daemon_active=0" /etc/cleanshutd.conf) > 0 ]; then
+elif [ $(grep -c "daemon_active=0" /etc/cleanshutd.conf) -gt 0 ]; then
     exit 1
 else
     daemon="on"
