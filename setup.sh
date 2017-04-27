@@ -344,6 +344,19 @@ if [ "$FORCE" != '-y' ]; then
     read -r -p "What BCM pin would you like to assert for GPIO power-off? (Enter \"off\" to disable) " bcmnumber < /dev/tty
     if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
         sudo sed -i "s|poweroff_pin=.*$|poweroff_pin=$bcmnumber|" /etc/cleanshutd.conf
+        echo
+        read -r -p "What BCM pin would you like to blink an LED before GPIO power-off? (Enter \"off\" to disable) " bcmnumber < /dev/tty
+        if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+            sudo sed -i "s|led_pin=.*$|led_pin=$bcmnumber|" /etc/cleanshutd.conf
+        else
+            if [ "$bcmnumber" = "off" ]; then
+                sudo sed -i "s|led_pin=.*$|led_pin=off|" /etc/cleanshutd.conf
+                info "\nGPIO power-off LED functionality has been disabled. Edit /etc/cleanshutd.conf to change"
+            else
+                warning "\ninput not recognised as a valid BCM pin number!"
+                echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+            fi
+        fi
     else
         if [ "$bcmnumber" = "off" ]; then
             sudo sed -i "s|poweroff_pin=.*$|poweroff_pin=off|" /etc/cleanshutd.conf
