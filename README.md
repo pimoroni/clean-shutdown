@@ -8,6 +8,13 @@ To install, run `setup.sh` and when prompted enter the pin you would you like to
 
 The setup script expects an integer value between 4 and 27 (you can use others outside this range by manually editing the config file as explained below, but there are caveats so if it does not quite work, you're on your own!)
 
+To install for a specific product, such as OnOff SHIM, run `setup.sh onoffshim` and the correct defaults will be set for you.
+
+## Supported Products
+
+* Normal install - Uses your chosen pin, no LED indication or power off support
+* OnOff SHIM - Uses BCM 17 as trigger and LED pin, and BCM 4 as the power off pin
+
 If you are unsure how to clone this repository, you can also use the following command to make your life easier:
 
 ```
