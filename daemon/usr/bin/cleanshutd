@@ -68,6 +68,10 @@ function pin_state {
     echo $(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT")
 }
 
+if [ "$trigger_pin" != "$led_pin" ]; then
+    raspi-gpio set $led_pin op dh
+fi
+
 while [ $daemon = "on" ]; do
     if [ `pin_state` = 1 ]; then
         echo "BCM $trigger_pin asserted low"
@@ -76,6 +80,10 @@ while [ $daemon = "on" ]; do
 
         while [ `pin_state` = 1 ]; do
             sleep 0.1
+            low_time=`expr $SECONDS - $start`
+            if [ $low_time -ge $hold_time ]; then
+                break
+            fi
         done
 
         low_time=`expr $SECONDS - $start`
@@ -85,9 +93,11 @@ while [ $daemon = "on" ]; do
         if [ $low_time -ge $hold_time ]; then
             echo "BCM $trigger_pin held low"
 
-            while [ `pin_state` = 1 ]; do
-                sleep 0.5
-            done
+            if [ "$led_pin" != "off" ] && [ "$led_pin" == "$trigger_pin" ]; then
+                while [ `pin_state` = 1 ]; do
+                    sleep 0.5
+                done
+            fi
 
             msg="BCM $trigger_pin held low, system shutdown in $shutdown_delay minutes"
             echo $msg
