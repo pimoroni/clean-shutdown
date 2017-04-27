@@ -41,7 +41,9 @@ oswarning=() # list experimental os-releases
 osdeny=( "Darwin" "Debian" "Kali" "Kano" "Mate" "PiTop" "RetroPie" "Ubuntu" "Volumio" ) # list os-releases specifically disallowed
 pkgdeplist=( "raspi-gpio" ) # list of dependencies
 
-FORCE=$1
+FORCE=""
+PRODUCT=""
+
 ASK_TO_REBOOT=false
 CURRENT_SETTING=false
 MIN_INSTALL=false
@@ -235,6 +237,25 @@ above this section for clarity, thanks!
 
 MAINSTART
 
+# parse arguments
+
+for i in "$@"; do
+case $i in
+    -y)
+        FORCE="-y"
+        shift
+    ;;
+    onoffshim)
+        PRODUCT=$i
+        shift
+    ;;
+    *)
+        echo "Unknown option $i"
+        exit 0
+    ;;
+esac
+done
+
 # checks and init
 
 arch_check
@@ -340,31 +361,33 @@ if [ "$FORCE" != '-y' ]; then
         echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
     fi
 
-    echo
-    read -r -p "What BCM pin would you like to assert for GPIO power-off? (Enter \"off\" to disable) " bcmnumber < /dev/tty
-    if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
-        sudo sed -i "s|poweroff_pin=.*$|poweroff_pin=$bcmnumber|" /etc/cleanshutd.conf
-        echo
-        read -r -p "What BCM pin would you like to blink an LED before GPIO power-off? (Enter \"off\" to disable) " bcmnumber < /dev/tty
-        if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
-            sudo sed -i "s|led_pin=.*$|led_pin=$bcmnumber|" /etc/cleanshutd.conf
-        else
-            if [ "$bcmnumber" = "off" ]; then
-                sudo sed -i "s|led_pin=.*$|led_pin=off|" /etc/cleanshutd.conf
-                info "\nGPIO power-off LED functionality has been disabled. Edit /etc/cleanshutd.conf to change"
+    if [ "$PRODUCT" == "onoffshim" ]; then
+            echo
+            read -r -p "What BCM pin would you like to assert for GPIO power-off? (Enter \"off\" to disable) " bcmnumber < /dev/tty
+            if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+                sudo sed -i "s|poweroff_pin=.*$|poweroff_pin=$bcmnumber|" /etc/cleanshutd.conf
+                echo
+                read -r -p "What BCM pin would you like to blink an LED before GPIO power-off? (Enter \"off\" to disable) " bcmnumber < /dev/tty
+                if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+                    sudo sed -i "s|led_pin=.*$|led_pin=$bcmnumber|" /etc/cleanshutd.conf
+                else
+                    if [ "$bcmnumber" = "off" ]; then
+                        sudo sed -i "s|led_pin=.*$|led_pin=off|" /etc/cleanshutd.conf
+                        info "\nGPIO power-off LED functionality has been disabled. Edit /etc/cleanshutd.conf to change"
+                    else
+                        warning "\ninput not recognised as a valid BCM pin number!"
+                        echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+                    fi
+                fi
             else
-                warning "\ninput not recognised as a valid BCM pin number!"
-                echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+                if [ "$bcmnumber" = "off" ]; then
+                    sudo sed -i "s|poweroff_pin=.*$|poweroff_pin=off|" /etc/cleanshutd.conf
+                    info "\nGPIO power-off functionality has been disabled. Edit /etc/cleanshutd.conf to change"
+                else
+                    warning "\ninput not recognised as a valid BCM pin number!"
+                    echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+                fi
             fi
-        fi
-    else
-        if [ "$bcmnumber" = "off" ]; then
-            sudo sed -i "s|poweroff_pin=.*$|poweroff_pin=off|" /etc/cleanshutd.conf
-            info "\nGPIO power-off functionality has been disabled. Edit /etc/cleanshutd.conf to change"
-        else
-            warning "\ninput not recognised as a valid BCM pin number!"
-            echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
-        fi
     fi
 
 fi
