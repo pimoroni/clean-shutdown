@@ -1,0 +1,35 @@
+#! /bin/sh
+
+# file: /lib/systemd/system-shutdown/gpio-poweroff
+# $1 will be either "halt", "poweroff", "reboot" or "kexec"
+
+GPIO_PIN=0
+CONFIG_FILE=/etc/cleanshutd.conf
+
+if [ -f "$CONFIG_FILE" ]; then
+    /bin/echo "Reading config file $CONFIG_FILE"
+
+    CONFIG_PIN=`grep -r '^poweroff_pin=[0-9]*$' "$CONFIG_FILE" | cut -f2- -d=`
+
+    if [ "$CONFIG_PIN" != "" ]; then
+        GPIO_PIN=$CONFIG_PIN
+    fi
+fi
+
+if [ $GPIO_PIN -le 0 ]; then
+    /bin/echo "Skipping GPIO power-off"
+    exit 0
+fi
+
+/bin/echo "Using GPIO pin $GPIO_PIN"
+
+case "$1" in
+  poweroff)
+        /bin/echo $GPIO_PIN > /sys/class/gpio/export
+        /bin/echo out > /sys/class/gpio/gpio$GPIO_PIN/direction
+        /bin/echo 0 > /sys/class/gpio/gpio$GPIO_PIN/value
+        /bin/sleep 0.5
+        ;;
+esac
+
+:
