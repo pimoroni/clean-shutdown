@@ -41,7 +41,9 @@ oswarning=() # list experimental os-releases
 osdeny=( "Darwin" "Debian" "Kali" "Kano" "Mate" "PiTop" "RetroPie" "Ubuntu" "Volumio" ) # list os-releases specifically disallowed
 pkgdeplist=( "raspi-gpio" ) # list of dependencies
 
-FORCE=$1
+FORCE=""
+PRODUCT=""
+
 ASK_TO_REBOOT=false
 CURRENT_SETTING=false
 MIN_INSTALL=false
@@ -235,6 +237,25 @@ above this section for clarity, thanks!
 
 MAINSTART
 
+# parse arguments
+
+for i in "$@"; do
+case $i in
+    -y)
+        FORCE="-y"
+        shift
+    ;;
+    onoffshim)
+        PRODUCT=$i
+        shift
+    ;;
+    *)
+        echo "Unknown option $i"
+        exit 0
+    ;;
+esac
+done
+
 # checks and init
 
 arch_check
@@ -323,20 +344,38 @@ sudo cp ./daemon/etc/init.d/cleanshutd /etc/init.d/
 sudo cp ./daemon/usr/bin/cleanshutd /usr/bin/
 sudo chmod +x /usr/bin/cleanshutd
 
+if [ "$PRODUCT" == "onoffshim" ]; then
+    echo -e "\nInstalling GPIO Power Off support for OnOff SHIM..."
+    sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
+    echo
+fi
+
+function config_set {
+    sudo sed -i "s|$1=.*$|$1=$2|" /etc/cleanshutd.conf
+}
+
 sudo systemctl daemon-reload
 sudo systemctl enable cleanshutd
 
 echo -e "\nCopying default config to /etc/"
 sudo cp ./daemon/etc/cleanshutd.conf /etc/
 
-if [ "$FORCE" != '-y' ]; then
-    echo
-    read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
-    if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
-        sudo sed -i "s|trigger_pin=.*$|trigger_pin=$bcmnumber|" /etc/cleanshutd.conf
-    else
-        warning "\ninput not recognised as a valid BCM pin number!"
-        echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+if [ "$PRODUCT" == "onoffshim" ]; then
+    echo -e "\nApplying default settings for OnOff SHIM..."
+    config_set trigger_pin 17
+    config_set poweroff_pin 4
+    config_set led_pin 17
+    config_set hold_time 2
+else
+    if [ "$FORCE" != '-y' ]; then
+        echo
+        read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
+        if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+            config_set trigger_pin $bcmnumber
+        else
+            warning "\ninput not recognised as a valid BCM pin number!"
+            echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+        fi
     fi
 fi
 

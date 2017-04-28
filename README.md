@@ -8,6 +8,13 @@ To install, run `setup.sh` and when prompted enter the pin you would you like to
 
 The setup script expects an integer value between 4 and 27 (you can use others outside this range by manually editing the config file as explained below, but there are caveats so if it does not quite work, you're on your own!)
 
+To install for a specific product, such as OnOff SHIM, run `setup.sh onoffshim` and the correct defaults will be set for you.
+
+## Supported Products
+
+* Normal install - Uses your chosen pin, no LED indication or power off support
+* OnOff SHIM - Uses BCM 17 as trigger and LED pin, and BCM 4 as the power off pin
+
 If you are unsure how to clone this repository, you can also use the following command to make your life easier:
 
 ```
@@ -53,4 +60,20 @@ This parameter determines how often the trigger is checked for. Normally, a smal
 
 ### `trigger_pin`
 
-Normally you'll set this up at install timme and won't need to change it, but... as we do, next week you might buy a nice shiny (Pimoroni) HAT or pHAT and find that the pin you had your clean shutdown trigger wired to is required by your new friend. Just move the trigger button to another pin and reboot! The unit used for this parameter is the bcm number of the pin (4 or above recommended, 0-3 have particularities that make them slightly less straightforward to use, though the daemon will happily monitor them for you, so as long as you know what you're doing go right ahead).
+Normally you'll set this up at install time and won't need to change it, but... as we do, next week you might buy a nice shiny (Pimoroni) HAT or pHAT and find that the pin you had your clean shutdown trigger wired to is required by your new friend. Just move the trigger button to another pin and reboot! The unit used for this parameter is the bcm number of the pin (4 or above recommended, 0-3 have particularities that make them slightly less straightforward to use, though the daemon will happily monitor them for you, so as long as you know what you're doing go right ahead).
+
+### `poweroff_pin`
+
+Set up at install time for products that support it (eg: OnOff SHIM) the `poweroff_pin` determines which pin will be pulled low right at the end of your Pi's shutdown process. If supported, this will cause power to your Pi to be cut completely.
+
+* This is pin 4 on OnOff SHIM
+
+### `led_pin`
+
+Like `poweroff_pin` this is set up at install time for supported products. It determines which pin will be pulled low to blink a status LED, first showing that shutdown has been armed, and finally blinking three times to show that final power off is imminent.
+
+* This is pin 17 on OnOff SHIM
+
+### `hold_time`
+
+This parameter determines the amount of time, in seconds, you must hold down the button until shutdown occurs. It defaults to 2 seconds to avoid accidental shutdowns. Use 0 or off to shutdown as soon as the button is pressed.

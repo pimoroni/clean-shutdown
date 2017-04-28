@@ -37,13 +37,19 @@ if [ -f /etc/cleanshutd.conf ]; then
     pin_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
     delay_value=$(grep "shutdown_delay" /etc/cleanshutd.conf | cut -c 16-)
     rate_value=$(grep "polling_rate" /etc/cleanshutd.conf | cut -c 14-)
+    led_value=$(grep "led_pin" /etc/cleanshutd.conf | cut -c 9-)
+    hold_value=$(grep "hold_time" /etc/cleanshutd.conf | cut -c 11-)
     declare -i trigger_pin=$pin_value
     declare -i shutdown_delay=$delay_value
     declare -i polling_rate=$rate_value
+    declare -i led_pin=$led_value
+    declare -i hold_time=$hold_value
 else
     declare -i trigger_pin=4
     declare -i shutdown_delay=5
     declare -i polling_rate=2
+    declare -i led_pin="off"
+    declare -i hold_time=2
 fi
 
 # Setting up pin as an input with pullup
@@ -58,10 +64,57 @@ raspi-gpio set $trigger_pin ip pu
 
 echo "monitoring BCM $trigger_pin"
 
+function pin_state {
+    echo $(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT")
+}
+
+if [ "$trigger_pin" != "$led_pin" ]; then
+    raspi-gpio set $led_pin op dh
+fi
+
 while [ $daemon = "on" ]; do
-    if [ $(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT") = 1 ]; then
-        echo "BCM $trigger_pin asserted low, system shutdown in $shutdown_delay minutes"
-        daemon="off" && shutdown -h +$shutdown_delay
+    if [ `pin_state` = 1 ]; then
+        echo "BCM $trigger_pin asserted low"
+
+        start=$SECONDS
+
+        while [ `pin_state` = 1 ]; do
+            sleep 0.1
+            low_time=`expr $SECONDS - $start`
+            if [ $low_time -ge $hold_time ]; then
+                break
+            fi
+        done
+
+        low_time=`expr $SECONDS - $start`
+
+        echo "Held low for $low_time"
+        
+        if [ $low_time -ge $hold_time ]; then
+            echo "BCM $trigger_pin held low"
+
+            if [ "$led_pin" != "off" ] && [ "$led_pin" == "$trigger_pin" ]; then
+                while [ `pin_state` = 1 ]; do
+                    sleep 0.5
+                done
+            fi
+
+            msg="BCM $trigger_pin held low, system shutdown in $shutdown_delay minutes"
+            echo $msg
+            wall $msg
+
+            daemon="off" && shutdown -h +$shutdown_delay
+
+            if [ "$led_pin" != "off" ]; then
+                while true; do
+                    raspi-gpio set $led_pin op dl
+                    sleep 0.1
+                    raspi-gpio set $led_pin op dh
+                    sleep 0.1
+                done
+            fi
+
+        fi
         sleep $polling_rate
     fi
 done
