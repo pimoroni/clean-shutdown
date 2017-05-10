@@ -35,11 +35,8 @@ armhfonly="yes" # whether the script is allowed to run on other arch
 armv6="yes" # whether armv6 processors are supported
 armv7="yes" # whether armv7 processors are supported
 armv8="yes" # whether armv8 processors are supported
-raspbianonly="no" # whether the script is allowed to run on other OSes
-osreleases=( "Raspbian" ) # list os-releases supported
-oswarning=() # list experimental os-releases
-osdeny=( "Darwin" "Debian" "Kali" "Kano" "Mate" "PiTop" "RetroPie" "Ubuntu" "Volumio" ) # list os-releases specifically disallowed
 pkgdeplist=( "raspi-gpio" ) # list of dependencies
+defaultconf="/etc/cleanshutd.conf"
 
 FORCE=""
 PRODUCT=""
@@ -101,12 +98,15 @@ newline() {
 
 progress() {
     count=0
-    until [ $count -eq $1 ]; do
+    until [ $count -eq 7 ]; do
         echo -n "..." && sleep 1
         ((count++))
-    done
-    echo
+    done;
+    if ps -C $1 > /dev/null; then
+        echo -en "\r\e[K" && progress $1
+    fi
 }
+
 sudocheck() {
     if [ $(id -u) -ne 0 ]; then
         echo -e "Install must be run as root. Try 'sudo ./$scriptname'\n"
@@ -121,10 +121,9 @@ sysclean() {
 
 sysupdate() {
     if ! $UPDATE_DB; then
-        echo "Updating apt indexes..." && progress 3 &
+        echo "Updating apt indexes..." && progress apt-get &
         sudo apt-get update 1> /dev/null || { warning "Apt failed to update indexes!" && exit 1; }
-        echo "Reading package lists..."
-        progress 3 && UPDATE_DB=true
+        sleep 3 && UPDATE_DB=true
     fi
 }
 
@@ -140,76 +139,6 @@ sysreboot() {
     echo
     if prompt "Would you like to reboot now?"; then
         sync && sudo reboot
-    fi
-}
-
-arch_check() {
-    IS_ARMHF=false
-    IS_ARMv6=false
-
-    if uname -m | grep -q "armv.l"; then
-        IS_ARMHF=true
-        if uname -m | grep -q "armv6l"; then
-            IS_ARMv6=true
-        fi
-    fi
-}
-
-os_check() {
-    IS_MACOSX=false
-    IS_RASPBIAN=false
-    IS_SUPPORTED=false
-    IS_EXPERIMENTAL=false
-    OS_NAME="Unknown"
-
-    if uname -s | grep -q "Darwin"; then
-        OS_NAME="Darwin" && IS_MACOSX=true
-    elif cat /etc/os-release | grep -q "Kali"; then
-        OS_NAME="Kali"
-    elif [ -d ~/.kano-settings ] || [ -d ~/.kanoprofile ]; then
-        OS_NAME="Kano"
-    elif whoami | grep -q "linaro"; then
-        OS_NAME="Linaro"
-    elif [ -d ~/.config/ubuntu-mate ];then
-        OS_NAME="Mate"
-    elif [ -d ~/.pt-os-dashboard ] || [ -d ~/.pt-dashboard ] || [ -f ~/.pt-dashboard-config ]; then
-        OS_NAME="PiTop"
-    elif command -v emulationstation > /dev/null; then
-        OS_NAME="RetroPie"
-    elif cat /etc/os-release | grep -q "volumio"; then
-        OS_NAME="Volumio"
-    elif cat /etc/os-release | grep -q "Raspbian"; then
-        OS_NAME="Raspbian" && IS_RASPBIAN=true
-    elif cat /etc/os-release | grep -q "Debian"; then
-        OS_NAME="Debian"
-    elif cat /etc/os-release | grep -q "Ubuntu"; then
-        OS_NAME="Ubuntu"
-    fi
-
-    if [[ " ${osreleases[@]} " =~ " ${OS_NAME} " ]]; then
-        IS_SUPPORTED=true
-    fi
-    if [[ " ${oswarning[@]} " =~ " ${OS_NAME} " ]]; then
-        IS_EXPERIMENTAL=true
-    fi
-}
-
-raspbian_check() {
-    IS_SUPPORTED=false
-    IS_EXPERIMENTAL=false
-
-    if [ -f /etc/os-release ]; then
-        if cat /etc/os-release | grep -q "/sid"; then
-            IS_SUPPORTED=false && IS_EXPERIMENTAL=true
-        elif cat /etc/os-release | grep -q "stretch"; then
-            IS_SUPPORTED=false && IS_EXPERIMENTAL=true
-        elif cat /etc/os-release | grep -q "jessie"; then
-            IS_SUPPORTED=true && IS_EXPERIMENTAL=false
-        elif cat /etc/os-release | grep -q "wheezy"; then
-            IS_SUPPORTED=true && IS_EXPERIMENTAL=false
-        else
-            IS_SUPPORTED=false && IS_EXPERIMENTAL=false
-        fi
     fi
 }
 
@@ -230,6 +159,14 @@ apt_pkg_install() {
     sudo apt-get --yes install "$1" 1> /dev/null || { inform "Apt failed to install $1!\nFalling back on pypi..." && return 1; }
 }
 
+config_set() {
+    if [ -n $defaultconf ]; then
+        sudo sed -i "s|$1=.*$|$1=$2|" $defaultconf
+    else
+        sudo sed -i "s|$1=.*$|$1=$2|" $3
+    fi
+}
+
 : <<'MAINSTART'
 
 Perform all global variables declarations as well as function definition
@@ -237,98 +174,38 @@ above this section for clarity, thanks!
 
 MAINSTART
 
-# parse arguments
-
-for i in "$@"; do
-case $i in
-    -y)
-        FORCE="-y"
-        shift
-    ;;
-    onoffshim)
-        PRODUCT=$i
-        shift
-    ;;
-    *)
-        echo "Unknown option $i"
-        exit 0
-    ;;
-esac
-done
-
 # checks and init
-
-arch_check
-os_check
-
-if [ $debugmode != "no" ]; then
-    echo "USER_HOME is $USER_HOME" && newline
-    echo "IS_RASPBIAN is $IS_RASPBIAN"
-    echo "IS_MACOSX is $IS_MACOSX"
-    echo "IS_SUPPORTED is $IS_SUPPORTED"
-    echo "IS_EXPERIMENTAL is $IS_EXPERIMENTAL"
-    newline
-fi
-
-if ! $IS_ARMHF; then
-    warning "This hardware is not supported, sorry!"
-    warning "Config files have been left untouched"
-    newline && exit 1
-fi
-
-if $IS_ARMv8 && [ $armv8 == "no" ]; then
-    warning "Sorry, your CPU is not supported by this installer"
-    newline && exit 1
-elif $IS_ARMv7 && [ $armv7 == "no" ]; then
-    warning "Sorry, your CPU is not supported by this installer"
-    newline && exit 1
-elif $IS_ARMv6 && [ $armv6 == "no" ]; then
-    warning "Sorry, your CPU is not supported by this installer"
-    newline && exit 1
-fi
-
-if [ $raspbianonly == "yes" ] && ! $IS_RASPBIAN;then
-        warning "This script is intended for Raspbian on a Raspberry Pi!"
-        newline && exit 1
-fi
-
-if $IS_RASPBIAN; then
-    raspbian_check
-    if ! $IS_SUPPORTED && ! $IS_EXPERIMENTAL; then
-        newline && warning "--- Warning ---" && newline
-        echo "The $productname installer"
-        echo "does not work on this version of Raspbian."
-        echo "Check https://github.com/$gitusername/$gitreponame"
-        echo "for additional information and support"
-        newline && exit 1
-    fi
-fi
-
-if ! $IS_SUPPORTED && ! $IS_EXPERIMENTAL; then
-        warning "Your operating system is not supported, sorry!"
-        newline && exit 1
-fi
-
-if $IS_EXPERIMENTAL; then
-    warning "Support for your operating system is experimental. Please visit"
-    warning "forums.pimoroni.com if you experience issues with this product."
-    newline
-fi
 
 if [ $forcesudo == "yes" ]; then
     sudocheck
 fi
 
-newline
-echo "This script will install everything needed to use"
-echo "$productname"
-newline
-warning "--- Warning ---"
-newline
-echo "Always be careful when running scripts and commands"
-echo "copied from the internet. Ensure they are from a"
-echo "trusted source."
-newline
+# parse arguments
+
+for i in "$@"; do
+    case $i in
+        -y)
+            FORCE="-y"
+            shift
+        ;;
+        onoffshim)
+            PRODUCT=$i
+            shift
+        ;;
+        zerolipo)
+            PRODUCT=$i
+            shift
+        ;;
+        phatbeat)
+            PRODUCT=$i
+            shift
+        ;;
+        *)
+            echo "Unknown option $i"
+            exit 0
+        ;;
+    esac
+done
 
 echo -e "Installing dependencies..."
 
@@ -350,10 +227,6 @@ if [ "$PRODUCT" == "onoffshim" ]; then
     echo
 fi
 
-function config_set {
-    sudo sed -i "s|$1=.*$|$1=$2|" /etc/cleanshutd.conf
-}
-
 sudo systemctl daemon-reload
 sudo systemctl enable cleanshutd
 
@@ -366,6 +239,13 @@ if [ "$PRODUCT" == "onoffshim" ]; then
     config_set poweroff_pin 4
     config_set led_pin 17
     config_set hold_time 2
+elif [ "$PRODUCT" == "zerolipo" ]; then
+    echo -e "\nApplying default settings for OnOff SHIM..."
+    config_set trigger_pin 4
+    config_set shutdown_delay=5
+elif [ "$PRODUCT" == "phatbeat" ]; then
+    echo -e "\nApplying default settings for OnOff SHIM..."
+    config_set trigger_pin 12
 else
     if [ "$FORCE" != '-y' ]; then
         echo
