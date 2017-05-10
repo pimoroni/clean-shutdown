@@ -37,8 +37,8 @@ armv7="yes" # whether armv7 processors are supported
 armv8="yes" # whether armv8 processors are supported
 raspbianonly="no" # whether the script is allowed to run on other OSes
 osreleases=( "Raspbian" ) # list os-releases supported
-oswarning=() # list experimental os-releases
-osdeny=( "Darwin" "Debian" "Kali" "Kano" "Mate" "PiTop" "RetroPie" "Ubuntu" "Volumio" ) # list os-releases specifically disallowed
+oswarning=( "Kano" "Mate" "PiTop" "RetroPie" "Volumio" ) # list experimental os-releases
+osdeny=( "Darwin" "Debian" "Kali" "Ubuntu" ) # list os-releases specifically disallowed
 pkgdeplist=( "raspi-gpio" ) # list of dependencies
 
 FORCE=""
