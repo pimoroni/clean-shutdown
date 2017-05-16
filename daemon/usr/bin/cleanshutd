@@ -35,21 +35,24 @@ fi
 
 if [ -f /etc/cleanshutd.conf ]; then
     pin_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
+    led_value=$(grep "led_pin" /etc/cleanshutd.conf | cut -c 9-)
+    poweroff_value=$(grep "poweroff_pin" /etc/cleanshutd.conf | cut -c 14-)
+    hold_value=$(grep "hold_time" /etc/cleanshutd.conf | cut -c 11-)
     delay_value=$(grep "shutdown_delay" /etc/cleanshutd.conf | cut -c 16-)
     rate_value=$(grep "polling_rate" /etc/cleanshutd.conf | cut -c 14-)
-    led_value=$(grep "led_pin" /etc/cleanshutd.conf | cut -c 9-)
-    hold_value=$(grep "hold_time" /etc/cleanshutd.conf | cut -c 11-)
     declare -i trigger_pin=$pin_value
+    declare -i led_pin=$led_value
+    declare -i poweroff_pin=$poweroff_value
+    declare -i hold_time=$hold_value
     declare -i shutdown_delay=$delay_value
     declare -i polling_rate=$rate_value
-    declare -i led_pin=$led_value
-    declare -i hold_time=$hold_value
 else
     declare -i trigger_pin=4
-    declare -i shutdown_delay=5
-    declare -i polling_rate=2
     declare -i led_pin="off"
+    declare -i poweroff_pin="off"
     declare -i hold_time=1
+    declare -i shutdown_delay=0
+    declare -i polling_rate=2
 fi
 
 # Setting up pin as an input with pullup
@@ -89,7 +92,7 @@ while [ $daemon = "on" ]; do
         low_time=`expr $SECONDS - $start`
 
         echo "Held low for $low_time"
-        
+
         if [ $low_time -ge $hold_time ]; then
             echo "BCM $trigger_pin held low"
 
