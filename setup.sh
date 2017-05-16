@@ -243,7 +243,7 @@ if [ "$PRODUCT" == "onoffshim" ]; then
     config_set shutdown_delay=5
     config_set polling_rate=2
 elif [ "$PRODUCT" == "zerolipo" ]; then
-    echo -e "\nApplying default settings for OnOff SHIM..."
+    echo -e "\nApplying default settings for Zero LiPo..."
     config_set trigger_pin 4
     config_set poweroff_pin off
     config_set led_pin off
@@ -251,7 +251,7 @@ elif [ "$PRODUCT" == "zerolipo" ]; then
     config_set shutdown_delay=5
     config_set polling_rate=2
 elif [ "$PRODUCT" == "phatbeat" ]; then
-    echo -e "\nApplying default settings for OnOff SHIM..."
+    echo -e "\nApplying default settings for pHAT BEAT..."
     config_set trigger_pin 12
     config_set poweroff_pin off
     config_set led_pin off
