@@ -35,6 +35,7 @@ armhfonly="yes" # whether the script is allowed to run on other arch
 armv6="yes" # whether armv6 processors are supported
 armv7="yes" # whether armv7 processors are supported
 armv8="yes" # whether armv8 processors are supported
+raspbianonly="no" # whether the script is allowed to run on other OSes
 pkgdeplist=( "raspi-gpio" ) # list of dependencies
 defaultconf="/etc/cleanshutd.conf"
 
