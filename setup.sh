@@ -258,6 +258,14 @@ elif [ "$PRODUCT" == "phatbeat" ]; then
     config_set hold_time 1
     config_set shutdown_delay 0
     config_set polling_rate 2
+elif [ "$PRODUCT" == "default" ]; then
+    echo -e "\nApplying default settings for pHAT BEAT..."
+    config_set trigger_pin 4
+    config_set poweroff_pin off
+    config_set led_pin off
+    config_set hold_time 1
+    config_set shutdown_delay 0
+    config_set polling_rate 2
 else
     if [ "$FORCE" != '-y' ]; then
         echo
