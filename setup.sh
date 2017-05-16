@@ -234,8 +234,6 @@ fi
 
 sudo systemctl daemon-reload
 sudo systemctl enable cleanshutd
-
-echo -e "\nCopying default config to /etc/"
 sudo cp ./daemon/etc/cleanshutd.conf /etc/
 
 if [ "$PRODUCT" == "onoffshim" ]; then
