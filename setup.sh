@@ -226,17 +226,13 @@ sudo cp ./daemon/etc/init.d/cleanshutd /etc/init.d/
 sudo cp ./daemon/usr/bin/cleanshutd /usr/bin/
 sudo chmod +x /usr/bin/cleanshutd
 
-if [ "$PRODUCT" == "onoffshim" ]; then
-    echo -e "\nInstalling GPIO Power Off support for OnOff SHIM..."
-    sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
-    echo
-fi
-
 sudo systemctl daemon-reload
 sudo systemctl enable cleanshutd
 sudo cp ./daemon/etc/cleanshutd.conf /etc/
 
 if [ "$PRODUCT" == "onoffshim" ]; then
+    echo -e "\nInstalling GPIO Power Off support...\n"
+    sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
     echo -e "\nApplying default settings for OnOff SHIM..."
     config_set trigger_pin 17
     config_set poweroff_pin 4
@@ -277,6 +273,15 @@ else
         else
             warning "\ninput not recognised as a valid BCM pin number!"
             echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+        fi
+        if confirm "Would you like to enable GPIO Power Off support?"; then
+            sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
+            read -r -p "What BCM pin would you like to pull low on shutdown? " bcmnumber < /dev/tty
+            if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+                config_set poweroff_pin $bcmnumber
+            else
+                config_set poweroff_pin off
+            fi
         fi
     fi
 fi
