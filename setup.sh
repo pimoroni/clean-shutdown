@@ -201,6 +201,10 @@ for i in "$@"; do
             PRODUCT=$i
             shift
         ;;
+        custom)
+            PRODUCT=$i
+            shift
+        ;;
         *)
             echo "Unknown option $i"
             exit 0
@@ -267,7 +271,7 @@ elif [ "$PRODUCT" == "default" ]; then
     config_set shutdown_delay 0
     config_set polling_rate 2
 else
-    if [ "$FORCE" != '-y' ]; then
+    if [ -z "$PRODUCT" ]; then
         echo
         read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
         if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
