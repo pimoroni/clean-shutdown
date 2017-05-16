@@ -280,7 +280,6 @@ else
 fi
 
 success "\nAll done!\n"
-echo -e "Enjoy your new $productname!\n"
 
 if [ "$FORCE" != '-y' ]; then
     sysreboot
