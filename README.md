@@ -40,8 +40,6 @@ If you are using a [Zero LiPo / LiPo SHIM](https://shop.pimoroni.com/products/ze
 ```
 curl https://get.pimoroni.com/zerolipo | bash
 ```
-(you won't be prompted for a pin in that case, BCM4 will be used automatically)
-
 
 ## Usage
 
