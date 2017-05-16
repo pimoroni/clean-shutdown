@@ -239,14 +239,25 @@ if [ "$PRODUCT" == "onoffshim" ]; then
     config_set trigger_pin 17
     config_set poweroff_pin 4
     config_set led_pin 17
-    config_set hold_time 2
+    config_set hold_time 1
+    config_set shutdown_delay=5
+    config_set polling_rate=2
 elif [ "$PRODUCT" == "zerolipo" ]; then
     echo -e "\nApplying default settings for OnOff SHIM..."
     config_set trigger_pin 4
+    config_set poweroff_pin off
+    config_set led_pin off
+    config_set hold_time 0
     config_set shutdown_delay=5
+    config_set polling_rate=2
 elif [ "$PRODUCT" == "phatbeat" ]; then
     echo -e "\nApplying default settings for OnOff SHIM..."
     config_set trigger_pin 12
+    config_set poweroff_pin off
+    config_set led_pin off
+    config_set hold_time 0
+    config_set shutdown_delay=5
+    config_set polling_rate=2
 else
     if [ "$FORCE" != '-y' ]; then
         echo
