@@ -274,14 +274,10 @@ else
             warning "\ninput not recognised as a valid BCM pin number!"
             echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
         fi
-        if confirm "Would you like to enable GPIO Power Off support?"; then
+        read -r -p "What BCM pin would you like to pull low on shutdown? ('off' for none) " bcmnumber < /dev/tty
+        if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
             sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
-            read -r -p "What BCM pin would you like to pull low on shutdown? " bcmnumber < /dev/tty
-            if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
-                config_set poweroff_pin $bcmnumber
-            else
-                config_set poweroff_pin off
-            fi
+            config_set poweroff_pin $bcmnumber
         fi
     fi
 fi
