@@ -77,7 +77,7 @@ For products that support it (eg: OnOff SHIM), the `poweroff_pin` determines whi
 
 ### `hold_time`
 
-This parameter determines the amount of time you must hold down the button until shutdown occurs. It defaults to 2 seconds to avoid accidental shutdowns. The unit for `hold_time` is expressed in seconds. Use `0` to shutdown as soon as the button is pressed.
+This parameter determines the amount of time you must hold down the button until shutdown occurs. It defaults to 1 second to avoid accidental shutdowns. The unit for `hold_time` is expressed in seconds. Use `0` to shutdown as soon as the button is pressed.
 
 ### `shutdown_delay`
 
