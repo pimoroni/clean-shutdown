@@ -49,7 +49,7 @@ else
     declare -i shutdown_delay=5
     declare -i polling_rate=2
     declare -i led_pin="off"
-    declare -i hold_time=2
+    declare -i hold_time=1
 fi
 
 # Setting up pin as an input with pullup
