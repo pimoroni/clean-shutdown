@@ -45,8 +45,8 @@ else
     declare -i led_pin="off"
     declare -i poweroff_pin="off"
     declare -i hold_time=1
-    declare -i shutdown_delay=1
-    declare -i polling_rate=2
+    declare -i shutdown_delay=0
+    declare -i polling_rate=1
 fi
 
 raspi-gpio set $trigger_pin ip pu
