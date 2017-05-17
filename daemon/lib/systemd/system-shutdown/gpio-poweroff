@@ -9,27 +9,21 @@ config_file=/etc/cleanshutd.conf
 
 if [ -f "$config_file" ]; then
     /bin/echo "Reading config file $config_file"
-
     poweroff_pin=`grep -r '^poweroff_pin=[0-9]*$' "$config_file" | cut -f2- -d=`
     led_pin=`grep -r '^led_pin=[0-9]*$' "$config_file" | cut -f2- -d=`
- 
 fi
+
 case "$1" in
   poweroff)
-
         if [ "$poweroff_pin" = "" ]; then
-            /bin/echo "Skipping GPIO power-off"
-            exit 0
+            /bin/echo "Skipping GPIO power-off" && exit 0
+        else
+            /bin/echo "Using power off pin $poweroff_pin"
         fi
-
-        /bin/echo "Using power off pin $poweroff_pin"
-
         if [ ! "$led_pin" = "" ]; then
             /bin/echo "Using LED pin $led_pin"
-
             /bin/echo $led_pin > /sys/class/gpio/export
             /bin/echo out > /sys/class/gpio/gpio$led_pin/direction
-
             for iteration in 1 2 3; do
                 /bin/echo 0 > /sys/class/gpio/gpio$led_pin/value
                 /bin/sleep 0.2
@@ -37,14 +31,10 @@ case "$1" in
                 /bin/sleep 0.2
             done
         fi
-
         /bin/echo $poweroff_pin > /sys/class/gpio/export
         /bin/echo out > /sys/class/gpio/gpio$poweroff_pin/direction
-
         /bin/echo 0 > /sys/class/gpio/gpio$poweroff_pin/value
-
         /bin/sleep 0.5
         ;;
 esac
-
 :
