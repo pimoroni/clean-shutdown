@@ -36,11 +36,12 @@ armv6="yes" # whether armv6 processors are supported
 armv7="yes" # whether armv7 processors are supported
 armv8="yes" # whether armv8 processors are supported
 raspbianonly="no" # whether the script is allowed to run on other OSes
-pkgdeplist=( "raspi-gpio" ) # list of dependencies
+pkgdeplist=() # list of dependencies
 defaultconf="/etc/cleanshutd.conf"
 
 FORCE=""
 PRODUCT=""
+USERPIN=""
 
 ASK_TO_REBOOT=false
 CURRENT_SETTING=false
@@ -56,6 +57,9 @@ APTSRC=/etc/apt/sources.list
 INITABCONF=/etc/inittab
 BLACKLIST=/etc/modprobe.d/raspi-blacklist.conf
 LOADMOD=/etc/modules
+
+RPIPOOL="http://archive.raspberrypi.org/debian/pool"
+RPIGPIO1="raspi-gpio_0.20170105_armhf.deb"
 
 # function define
 
@@ -206,13 +210,17 @@ for i in "$@"; do
             shift
         ;;
         *)
-            echo "Unknown option $i"
-            exit 0
+            USERPIN=$i
         ;;
     esac
 done
 
 echo -e "Installing dependencies..."
+
+if ! apt_pkg_install "raspi-gpio" &> /dev/null; then
+    wget $RPIPOOL/main/r/raspi-gpio/$RPIGPIO1 &> /dev/null
+    sudo dpkg -i $DEBDIR/$RPIGPIO1
+fi
 
 for pkgdep in ${pkgdeplist[@]}; do
     if apt_pkg_req "$pkgdep"; then
@@ -266,18 +274,22 @@ elif [ "$PRODUCT" == "default" ]; then
     config_set polling_rate 2
 else
     if [ -z "$PRODUCT" ]; then
-        echo
-        read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
-        if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
-            config_set trigger_pin $bcmnumber
+        if [ -n "$USERPIN" ]; then
+            config_set trigger_pin "$USERPIN"
         else
-            warning "\ninput not recognised as a valid BCM pin number!"
-            echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
-        fi
-        read -r -p "What BCM pin would you like to pull low on shutdown? ('off' for none) " bcmnumber < /dev/tty
-        if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
-            sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
-            config_set poweroff_pin $bcmnumber
+            echo
+            read -r -p "What BCM pin would you like to use as trigger for the shutdown? " bcmnumber < /dev/tty
+            if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+                config_set trigger_pin $bcmnumber
+            else
+                warning "\ninput not recognised as a valid BCM pin number!"
+                echo "edit /etc/cleanshutd.conf manually to specify the correct pin"
+            fi
+            read -r -p "What BCM pin would you like to pull low on shutdown? ('off' for none) " bcmnumber < /dev/tty
+            if [ $bcmnumber -ge 4 &>/dev/null ] && [ $bcmnumber -le 27 &>/dev/null ]; then
+                sudo cp ./daemon/lib/systemd/system-shutdown/gpio-poweroff /lib/systemd/system-shutdown/gpio-poweroff
+                config_set poweroff_pin $bcmnumber
+            fi
         fi
     fi
 fi
