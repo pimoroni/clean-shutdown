@@ -96,8 +96,8 @@ while [ $daemon = "on" ]; do
                 done
             fi
         fi
-        sleep $polling_rate
     fi
+    sleep $polling_rate
 done
 
 exit 0
