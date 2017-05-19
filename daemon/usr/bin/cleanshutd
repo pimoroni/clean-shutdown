@@ -93,12 +93,6 @@ shutdown_trigger() {
 while true; do
     while [ $daemon = "on" ]; do
         if shutdown_trigger; then
-            if [ "$led_pin" != "off" ] && [ "$led_pin" == "$trigger_pin" ]; then
-                while [ `pin_state` = 1 ]; do
-                    sleep 0.5
-                done
-            fi
-
             msg="BCM $trigger_pin held low, system shutdown in $shutdown_delay minutes"
             echo $msg && wall $msg
             daemon="off" && shutdown -h +$shutdown_delay
