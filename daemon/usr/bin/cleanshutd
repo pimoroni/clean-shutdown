@@ -50,7 +50,7 @@ else
 fi
 
 if [ $shutdown_delay != 0 ]; then
-    declare -i blink_time=$shutdown_delay)
+    declare -i blink_time=$shutdown_delay
 else
     declare -i blink_time=0.1
 fi
@@ -64,11 +64,11 @@ declare -i pin_state=$(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 fun
 echo "monitoring BCM $trigger_pin"
 
 shutdown_trigger() {
-    if [ `pin_state` = 1 ]; then
+    if [ $pin_state = 1 ]; then
         echo "BCM $trigger_pin asserted low"
         start=$SECONDS
 
-        while [ `pin_state` = 1 ]; do
+        while [ $pin_state = 1 ]; do
             sleep 0.1
             low_time=`expr $SECONDS - $start`
             if [ $low_time -ge $hold_time ]; then
@@ -85,11 +85,11 @@ shutdown_trigger() {
     fi
 }
 
-while true; then
+while true; do
     while [ $daemon = "on" ]; do
         if shutdown_trigger; then
             if [ "$led_pin" != "off" ] && [ "$led_pin" == "$trigger_pin" ]; then
-                while [ `pin_state` = 1 ]; do
+                while [ $pin_state = 1 ]; do
                     sleep 0.5
                 done
             fi
