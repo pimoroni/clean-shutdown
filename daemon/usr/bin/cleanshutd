@@ -49,18 +49,21 @@ else
     declare -i polling_rate=1
 fi
 
-raspi-gpio set $trigger_pin ip pu
-echo "monitoring BCM $trigger_pin"
-
-function pin_state {
-    echo $(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT")
-}
+if [ $shutdown_delay != 0 ]; then
+    declare -i blink_time=$shutdown_delay)
+else
+    declare -i blink_time=0.1
+fi
 
 if [ "$trigger_pin" != "$led_pin" ]; then
     raspi-gpio set $led_pin op dh
 fi
 
-while [ $daemon = "on" ]; do
+raspi-gpio set $trigger_pin ip pu
+declare -i pin_state=$(raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT")
+echo "monitoring BCM $trigger_pin"
+
+shutdown_trigger() {
     if [ `pin_state` = 1 ]; then
         echo "BCM $trigger_pin asserted low"
         start=$SECONDS
@@ -72,13 +75,19 @@ while [ $daemon = "on" ]; do
                 break
             fi
         done
-        low_time=`expr $SECONDS - $start`
-
         echo "Held low for $low_time"
 
         if [ $low_time -ge $hold_time ]; then
-            echo "BCM $trigger_pin held low"
+            echo "BCM $trigger_pin held low" && return 0
+        else
+            return 1
+        fi
+    fi
+}
 
+while true; then
+    while [ $daemon = "on" ]; do
+        if shutdown_trigger; then
             if [ "$led_pin" != "off" ] && [ "$led_pin" == "$trigger_pin" ]; then
                 while [ `pin_state` = 1 ]; do
                     sleep 0.5
@@ -88,16 +97,22 @@ while [ $daemon = "on" ]; do
             msg="BCM $trigger_pin held low, system shutdown in $shutdown_delay minutes"
             echo $msg && wall $msg
             daemon="off" && shutdown -h +$shutdown_delay
-
-            if [ "$led_pin" != "off" ]; then
-                while true; do
-                    raspi-gpio set $led_pin op dl && sleep 0.1
-                    raspi-gpio set $led_pin op dh && sleep 0.1
-                done
-            fi
+            break
         fi
-    fi
-    sleep $polling_rate
+        sleep $polling_rate
+    done
+
+    while [ $daemon = "off" ]; do
+        if [ "$led_pin" != "off" ]; then
+            raspi-gpio set $led_pin op dl && sleep $blink_time
+            raspi-gpio set $led_pin op dh && sleep $blink_time
+        fi
+        if shutdown_trigger; then
+            daemon="on" && shutdown -c
+            break
+        fi
+        sleep $polling_rate
+    done
 done
 
 exit 0
