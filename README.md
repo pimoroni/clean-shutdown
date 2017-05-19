@@ -89,7 +89,7 @@ This parameter determines how often the trigger is checked for. Normally, a smal
 
 ## Parasitic Shutdowns
 
-Be aware that altering the state of `trigger_pin` can throw you in a scenario where you Pi shuts down right away upon boot, if a process, dtoverlay, or HAT EEPROM, just to name a few possibilities pulls it low on boot (or set it as an output, which implies it driven low initially).
+Be aware that altering the state of `trigger_pin` can throw you in a scenario where your Pi shuts down right away upon boot, if a process, dtoverlay, or HAT EEPROM, just to name a few possibilities, pulls it low on boot (or set it as an output, which implies it being driven low initially).
 
 If this occurs right after you plugged a HAT, then try booting without it attached, and disable the cleatshutd service with:
 
