@@ -109,8 +109,8 @@ while true; do
 
     while [ $daemon = "off" ]; do
         if [ "$led_pin" != "off" ]; then
-            raspi-gpio set $led_pin op dh && sleep 0.1
-            raspi-gpio set $led_pin op dl && sleep $blink_time
+            raspi-gpio set $led_pin op dl && sleep 0.1
+            raspi-gpio set $led_pin op dh && sleep $blink_time
         fi
     done
 done
