@@ -86,3 +86,19 @@ Most of the time you probably want your Pi to shutdow as soon as the trigger occ
 ### `polling_rate`
 
 This parameter determines how often the trigger is checked for. Normally, a small but reasonable value, say a second or 2 is adequate to detect a button press without polling constantly, but if you take the Zero Lipo example again it really does not matter if the monitoring is more relaxed, say if polling is performed every 30 seconds or so. There may be other use-cases where smaller or larger values are optimal, so there's a parameter for the occasion if you find yourself in one. Units for `polling_rate` are expressed in seconds.
+
+## Parasitic Shutdowns
+
+Be aware that altering the state of `trigger_pin` can throw you in a scenario where you Pi shuts down right away upon boot, if a process, dtoverlay, or HAT EEPROM, just to name a few possibilities pulls it low on boot (or set it as an output, which implies it driven low initially).
+
+If this occurs right after you plugged a HAT, then try booting without it attached, and disable the cleatshutd service with:
+
+```bash
+sudo systemctl disable cleanshutd
+```
+
+There is another way, which is provided as an emergency solution for scenarios where reaching the bash prompt is not possible (because the Pi shuts down before you get a chance to do so).
+
+In such cases, or as an alternative to the above, you may add the following to your `/boot/config.txt` file from another computer:
+
+`disable_cleanshutd=1`
