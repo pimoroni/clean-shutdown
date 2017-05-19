@@ -112,6 +112,10 @@ while true; do
             raspi-gpio set $led_pin op dl && sleep 0.1
             raspi-gpio set $led_pin op dh && sleep $blink_time
         fi
+        if ! [ -f /var/run/nologin ]; then
+            raspi-gpio set $trigger_pin ip pu && daemon="on"
+            break
+        fi
     done
 done
 
