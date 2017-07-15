@@ -45,7 +45,7 @@ do_start()
 		return 1
 	fi
 	echo 'Starting...' >&2
-	su -c "$DAEMON" root
+	start-stop-daemon --background --make-pidfile --pidfile /var/run/cleanshutd.pid --startas /usr/bin/cleanshutd --start
 }
 
 #
@@ -58,7 +58,7 @@ do_stop()
 		return 1
 	fi
 	echo 'Stopping...' >&2
-	kill $(cat "$PIDFILE")
+	start-stop-daemon --remove-pidfile --pidfile /var/run/cleanshutd.pid --stop
 	echo 'Service stopped!' >&2
 	return 0
 }
