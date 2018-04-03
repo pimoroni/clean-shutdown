@@ -1,116 +1,288 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-: <<'DISCLAIMER'
+import os
+import sys
+import subprocess
+from datetime import datetime
+import time
+import signal
+import configparser
+import argparse
+import RPi.GPIO as GPIO
+from threading import Timer, Event, Thread
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+DAEMONIZE = False
 
-This script is licensed under the terms of the MIT license.
-Unless otherwise noted, code reproduced herein
-was written for this script.
+PIDFILE = "/var/run/cleanshutdownd.pid"
+LOGFILE = "/var/run/cleanshutdownd.log"
+ERRFILE = "/var/run/cleanshutdownd.err"
 
-- The Pimoroni Crew -
+CONFIG_FILE = "/etc/cleanshutdownd.conf"
 
-DISCLAIMER
+# Set if button is pressed long enough to trigger a reboot
+pending_reboot = False
 
-if [ $(grep -c "disable_cleanshutd=1" /boot/config.txt) -gt 0 ]; then
-    echo "cleanshutd is disabled in /boot/config.txt" && exit 1
-elif [ $(grep -c "daemon_active=0" /etc/cleanshutd.conf) -gt 0 ]; then
-    echo "cleanshutd is disabled in /etc/cleanshutd.conf" && exit 1
-else
-    daemon="on"
-fi
+reboot_timer = None
+shutdown_timer = None
+flashled_thread = None
 
-if [ -f /etc/cleanshutd.conf ]; then
-    pin_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
-    led_value=$(grep "led_pin" /etc/cleanshutd.conf | cut -c 9-)
-    poweroff_value=$(grep "poweroff_pin" /etc/cleanshutd.conf | cut -c 14-)
-    hold_value=$(grep "hold_time" /etc/cleanshutd.conf | cut -c 11-)
-    delay_value=$(grep "shutdown_delay" /etc/cleanshutd.conf | cut -c 16-)
-    rate_value=$(grep "polling_rate" /etc/cleanshutd.conf | cut -c 14-)
-    declare -i trigger_pin=$pin_value
-    declare -i led_pin=$led_value
-    declare -i poweroff_pin=$poweroff_value
-    declare -i hold_time=$hold_value
-    declare -i shutdown_delay=$delay_value
-    declare -i polling_rate=$rate_value
-else
-    declare -i trigger_pin=4
-    declare -i led_pin="off"
-    declare -i poweroff_pin="off"
-    declare -i hold_time=1
-    declare -i shutdown_delay=0
-    declare -i polling_rate=1
-fi
+class FlashLED(Thread):
+    def __init__(self, led_pin, shutdown_hold_time):
+        Thread.__init__(self)
+        self.stopped = Event()
+        self.shutdown_hold_time = shutdown_hold_time
+        self.led_pin = led_pin
 
-if [ $shutdown_delay != 0 ]; then
-    declare -i blink_time=$shutdown_delay
-else
-    blink_time=0.1
-fi
+    def stop(self):
+        self.stopped.set()
 
-if [ "$trigger_pin" != "$led_pin" ]; then
-    raspi-gpio set $led_pin op dh
-fi
+    def _blink_speed(self, start_time):
+        t_elapsed = (time.time() - start_time) / float(self.shutdown_hold_time)
+        t_wait = 0.5 - (0.5 * t_elapsed)
+        return t_wait
 
-raspi-gpio set $trigger_pin ip pu
-echo "monitoring BCM $trigger_pin"
-
-pin_state() {
-    raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT"
-}
-
-shutdown_trigger() {
-    if [ `pin_state` = 1 ]; then
-        echo "BCM $trigger_pin asserted low"
-        start=$SECONDS
-
-        while [ `pin_state` = 1 ]; do
-            sleep 0.1
-            low_time=`expr $SECONDS - $start`
-            if [ $low_time -ge $hold_time ]; then
+    def run(self):
+        started = time.time()
+        GPIO.output(self.led_pin, GPIO.HIGH)
+        while not self.stopped.wait(self._blink_speed(started)):
+            state = not GPIO.input(self.led_pin)
+            GPIO.output(self.led_pin, state)
+            if self._blink_speed(started) <= 0:
+                self.stop()
                 break
-            fi
-        done
-        echo "Held low for $low_time"
 
-        if [ $low_time -ge $hold_time ]; then
-            echo "BCM $trigger_pin held low" && return 0
-        else
-            return 1
-        fi
-    else
-        return 1
-    fi
-}
+        GPIO.output(self.led_pin, GPIO.LOW)
 
-while true; do
-    while [ $daemon = "on" ]; do
-        if shutdown_trigger; then
-            msg="BCM $trigger_pin held low, system shutdown in $shutdown_delay minutes"
-            echo $msg && wall $msg
-            daemon="off" && shutdown -h +$shutdown_delay
-            break
-        fi
-        sleep $polling_rate
-    done
+def log(*args):
+    sys.stdout.write(str(datetime.now()))
+    sys.stdout.write(":")
+    for a in args:
+        sys.stdout.write(" ")
+        sys.stdout.write(str(a))
 
-    while [ $daemon = "off" ]; do
-        if [ "$led_pin" != "off" ]; then
-            raspi-gpio set $led_pin op dl && sleep 0.1
-            raspi-gpio set $led_pin op dh && sleep $blink_time
-        fi
-        if ! [ -f /var/run/nologin ]; then
-            raspi-gpio set $trigger_pin ip pu && daemon="on"
-            break
-        fi
-    done
-done
+    sys.stdout.write("\n")
+    sys.stdout.flush()
 
-exit 0
+def daemonize(pid_file=PIDFILE, log_file=LOGFILE, error_file=ERRFILE):
+    try:
+        pid = os.fork()
+        if pid > 0:
+            sys.exit(0)
+
+    except OSError, e:
+        log("Fork #1 failed: {} ({})".format(e.errno, e.strerror))
+        sys.exit(1)
+
+    os.chdir("/")
+    os.setsid()
+    os.umask(0)
+
+    try:
+        pid = os.fork()
+        if pid > 0:
+            fpid = open(pid_file, "w")
+            fpid.write(str(pid))
+            fpid.close()
+            sys.exit(0)
+    except OSError, e:
+        log("Fork #2 failed: {} ({})".format(e.errno, e.strerror))
+        sys.exit(1)
+
+    stdin = file("/dev/null", "r")
+    stdout = file(log_file, "a+", 0)
+    stderr = file(error_file, "a+", 0)
+
+    os.dup2(stdin.fileno(), sys.stdin.fileno())
+    os.dup2(stdout.fileno(), sys.stdout.fileno())
+    os.dup2(stderr.fileno(), sys.stderr.fileno())
+
+
+class Config():
+    def __init__(self, config_file, required_sections=None):
+        self.config = configparser.ConfigParser()
+        self.config.read(config_file)
+
+        if required_sections is not None:
+            for section in required_sections:
+                if not self.has_section(section):
+                    raise RuntimeError("Missing \"{}\" config section.".format(section))
+
+    def has_section(self, section):
+        return section in self.config.sections()
+
+    def get(self, section, option, datatype=str, valid_values=None, default=None):
+        value = self.config.get(section, option, fallback=default)
+
+        value = value.decode()
+
+        if value.lower() in ["none", "off"]:
+            value = None
+
+        log(section, option, value, default)
+
+        if datatype is bool:
+            if value.lower() in ["true", "1", "yes"]:
+                value = True
+            elif value.lower() in ["false", "0", "no"]:
+                value = False
+            else:
+                value = default
+        else:
+            try:
+                value = datatype(value)
+            except (ValueError, TypeError), e:
+                print(e)
+                value = default
+
+        if datatype is str and len(value) == 0:
+            value = default
+
+        if isinstance(valid_values, list) and value not in valid_values:
+            value = default
+
+        return value
+
+
+def main():
+    if DAEMONIZE:
+        daemonize()
+
+    config = Config(CONFIG_FILE, required_sections=["General", "Switch", "Timings", "Hooks", "Files"])
+
+    opt_enabled = config.get("General", "enabled", datatype=bool, default=False)
+    opt_poweroff_pin = config.get("General", "poweroff_pin", datatype=int, default=None)
+    opt_status_led_pin = config.get("General", "status_led_pin", datatype=int, default=None)
+
+    opt_switch_pin = config.get("Switch", "pin", datatype=int, default=None)
+    opt_switch_type = config.get("Switch", "type", datatype=str, valid_values=["momentary", "toggle"], default="momentary")
+    opt_switch_polarity = config.get("Switch", "polarity", datatype=str, valid_values=["low", "high"], default="low")
+
+    opt_timings_reboot = config.get("Timings", "reboot_hold", datatype=int, default=None)
+    opt_timings_shutdown = config.get("Timings", "shutdown_hold", datatype=int, default=3)
+    opt_timings_delay = config.get("Timings", "shutdown_delay", datatype=int, default=0)
+
+    opt_files_pid = config.get("Files", "pid_file", datatype=str, default=PIDFILE)
+    opt_files_err = config.get("Files", "error_file", datatype=str, default=ERRFILE)
+    opt_files_log = config.get("Files", "log_file", datatype=str, default=LOGFILE)
+
+    opt_hook_reboot = config.get("Hooks", "before_reboot", datatype=str, default=None)
+    opt_hook_shutdown = config.get("Hooks", "before_shutdown", datatype=str, default=None)
+
+    log("""
+    General:
+        Enabled: {opt_enabled}
+        Status LED: {opt_status_led_pin}
+        Poweroff Pin: {opt_poweroff_pin}
+
+    Switch:
+        Pin: {opt_switch_pin}
+        Type: {opt_switch_type}
+        Polarity: {opt_switch_polarity}
+
+
+    Timings:
+        Reboot: {opt_timings_reboot}
+        Shutdown: {opt_timings_shutdown}
+        Delay: {opt_timings_delay}
+
+    Hooks:
+        Reboot Hook:
+        Shutdown Hook:
+
+    Files:
+        Error: {opt_files_err}
+        Log: {opt_files_log}
+        PID: {opt_files_pid}
+
+    """.format(**locals()))
+
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+
+    if opt_status_led_pin is not None and opt_status_led_pin is not opt_switch_pin:
+        GPIO.setup(opt_status_led_pin, GPIO.OUT, initial=GPIO.LOW)
+
+    GPIO.setup(opt_switch_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP if opt_switch_polarity == "low" else GPIO.PUD_DOWN)
+
+    def do_shutdown():
+        global pending_reboot
+        pending_reboot = False
+        log("Shutdown Triggered")
+        if opt_hook_shutdown is not None:
+            try:
+                subprocess.check_call(opt_hook_shutdown)
+            except subprocess.CalledProcessError, e:
+                log("ABORTING SHUTDOWN: {}".format(e))
+                return
+        
+    def do_reboot():
+        global pending_reboot
+        pending_reboot = False
+        log("Reboot Triggered")
+        if opt_hook_reboot is not None:
+            try:
+                subprocess.check_call(opt_hook_reboot)
+            except subprocess.CalledProcessError, e:
+                log("ABORTING REBOOT: {}".format(e))
+                return
+
+    def set_reboot():
+        global pending_reboot
+        #log("Reboot Queued")
+        pending_reboot = True
+
+    def switch_trigger(pin):
+        global shutdown_timer, reboot_timer, flashled_thread
+
+        #log("SWITCH_TRIGGER: Caught {} edge on pin {}".format(pin, opt_switch_polarity))
+
+        GPIO.remove_event_detect(opt_switch_pin)
+        GPIO.add_event_detect(opt_switch_pin, GPIO.RISING if opt_switch_polarity == "low" else GPIO.FALLING, callback=switch_clear)
+        shutdown_timer = Timer(opt_timings_shutdown, do_shutdown)
+        shutdown_timer.start()
+
+
+        if opt_status_led_pin is not None and opt_status_led_pin is not opt_switch_pin:
+            log("Flashing status LED")
+            flashled_thread = FlashLED(opt_status_led_pin, opt_timings_shutdown)
+            flashled_thread.start()
+
+        if opt_timings_reboot > 0:
+            reboot_timer = Timer(opt_timings_reboot, set_reboot)
+            reboot_timer.start()
+
+    def switch_clear(pin):
+        global shutdown_timer, reboot_timer, flashled_thread
+
+        #log("SWITCH_CLEAR: Caught {} edge on pin {}".format(pin, opt_switch_polarity))
+
+        try:
+            flashled_thread.stop()
+            flashled_thread =  None
+        except AttributeError, e:
+            pass
+
+        try:
+            shutdown_timer.cancel()
+            shutdown_timer = None
+        except AttributeError, e:
+            pass
+
+        try:
+            reboot_timer.cancel()
+            reboot_timer = None
+        except AttributeError, e:
+            pass
+
+        if pending_reboot:
+            do_reboot()
+
+        GPIO.remove_event_detect(opt_switch_pin)
+        GPIO.add_event_detect(opt_switch_pin, GPIO.FALLING if opt_switch_polarity == "low" else GPIO.RISING, callback=switch_trigger)
+
+    switch_clear(None)
+
+    signal.pause()
+
+if __name__ == "__main__":
+    main()
