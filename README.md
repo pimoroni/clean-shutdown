@@ -81,7 +81,7 @@ This parameter determines the amount of time you must hold down the button until
 
 ### `shutdown_delay`
 
-Most of the time you probably want your Pi to shutdow as soon as the trigger occurs, but sometimmes, like with the Zero Lipo, once the battery warning has been detected you still got some life of the LiPo before it is necessary to shut it down (the 'battery low' warning is activated at 3.4V, but the protection circuitry will only cut off the supply at 3.0V). The unit for `shutdown_delay` is expressed in minutes (`0`, the default, means immediate shutdown).
+Most of the time you probably want your Pi to shutdown as soon as the trigger occurs, but sometimmes, like with the Zero Lipo, once the battery warning has been detected you still got some life of the LiPo before it is necessary to shut it down (the 'battery low' warning is activated at 3.4V, but the protection circuitry will only cut off the supply at 3.0V). The unit for `shutdown_delay` is expressed in minutes (`0`, the default, means immediate shutdown).
 
 ### `polling_rate`
 
