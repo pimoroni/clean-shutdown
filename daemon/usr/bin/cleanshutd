@@ -62,16 +62,16 @@ fi
 raspi-gpio set $trigger_pin ip pu
 echo "monitoring BCM $trigger_pin"
 
-pin_state() {
-    raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT"
+trigger_pin_low() {
+    raspi-gpio get $trigger_pin | grep -q "level=0 fsel=0 func=INPUT"
 }
 
 shutdown_trigger() {
-    if [ `pin_state` = 1 ]; then
+    if trigger_pin_low; then
         echo "BCM $trigger_pin asserted low"
         start=$SECONDS
 
-        while [ `pin_state` = 1 ]; do
+        while trigger_pin_low; do
             sleep 0.1
             low_time=`expr $SECONDS - $start`
             if [ $low_time -ge $hold_time ]; then
