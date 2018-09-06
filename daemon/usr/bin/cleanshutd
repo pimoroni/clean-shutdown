@@ -23,8 +23,6 @@ if [ $(grep -c "disable_cleanshutd=1" /boot/config.txt) -gt 0 ]; then
     echo "cleanshutd is disabled in /boot/config.txt" && exit 1
 elif [ $(grep -c "daemon_active=0" /etc/cleanshutd.conf) -gt 0 ]; then
     echo "cleanshutd is disabled in /etc/cleanshutd.conf" && exit 1
-else
-    daemon="on"
 fi
 
 if [ -f /etc/cleanshutd.conf ]; then
@@ -90,6 +88,7 @@ shutdown_trigger() {
     fi
 }
 
+daemon="on"
 while true; do
     while [ $daemon = "on" ]; do
         if shutdown_trigger; then
