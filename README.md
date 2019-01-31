@@ -32,6 +32,12 @@ If you are using a [OnOff SHIM](https://shop.pimoroni.com/products/onoff-shim), 
 ```
 curl https://get.pimoroni.com/onoffshim | bash
 ```
+#### Cutting off power to RPi using another RPi
+Sometimes it could be neccessary to turn off/on power to RPi using another RPi.
+* For example if a remote RPi host hangs (failing some predefined ping tests) and therefore needs to be power cycled.
+* Or for example in a High-Availability setup where you have two RPis which should be able to cut off power from one another acting as a [STONITH](https://en.wikipedia.org/wiki/STONITH) device.
+
+OnOffShim can be used as such device. In order to do that you need to connect OnOffShim to both RPis. Here is a diagram which shows the first example where RPi Zero is acting as a "master" host that turns off/on power to "slave" RPi/1/2/3.  
 
 ### Zero LiPo / LiPo SHIM
 
