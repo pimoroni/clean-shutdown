@@ -40,6 +40,18 @@ In some circumstances it could be neccessary to power cycle one RPi using anothe
 OnOffShim can be used as such device. In order to do that you need to connect OnOffShim to both RPis. Here is a diagram which shows the first setup from above examples where RPi Zero is acting as a "master" host that turns power off and on to a "slave" RPi3 host.
 
 ![img](PowerCyclePi.png?raw=true)
+After you have installed the software using one-liner mentioned above you can use these two commands to mannually turn power off and on to "slave" RPi
+
+Turn Off power
+```
+#sudo raspi-gpio set 4 op dl
+```
+
+Turn On power
+```
+#sudo raspi-gpio set 4 op dh
+```
+Keep in mind that cutting power off to RPi can corrupt your SD card. Use Backups or make filesystem Read-Only.
 
 ### Zero LiPo / LiPo SHIM
 
