@@ -19,38 +19,29 @@ was written for this script.
 
 DISCLAIMER
 
-if [ $(grep -c "disable_cleanshutd=1" /boot/config.txt) -gt 0 ]; then
-    echo "cleanshutd is disabled in /boot/config.txt" && exit 1
-elif [ $(grep -c "daemon_active=0" /etc/cleanshutd.conf) -gt 0 ]; then
-    echo "cleanshutd is disabled in /etc/cleanshutd.conf" && exit 1
-else
-    daemon="on"
-fi
+# default values
+daemon_active=1
+trigger_pin=4
+led_pin=off
+poweroff_pin=off
+hold_time=1
+shutdown_delay=0
+polling_rate=1
 
 if [ -f /etc/cleanshutd.conf ]; then
-    pin_value=$(grep "trigger_pin" /etc/cleanshutd.conf | cut -c 13-)
-    led_value=$(grep "led_pin" /etc/cleanshutd.conf | cut -c 9-)
-    poweroff_value=$(grep "poweroff_pin" /etc/cleanshutd.conf | cut -c 14-)
-    hold_value=$(grep "hold_time" /etc/cleanshutd.conf | cut -c 11-)
-    delay_value=$(grep "shutdown_delay" /etc/cleanshutd.conf | cut -c 16-)
-    rate_value=$(grep "polling_rate" /etc/cleanshutd.conf | cut -c 14-)
-    declare -i trigger_pin=$pin_value
-    declare -i led_pin=$led_value
-    declare -i poweroff_pin=$poweroff_value
-    declare -i hold_time=$hold_value
-    declare -i shutdown_delay=$delay_value
-    declare -i polling_rate=$rate_value
-else
-    declare -i trigger_pin=4
-    declare -i led_pin="off"
-    declare -i poweroff_pin="off"
-    declare -i hold_time=1
-    declare -i shutdown_delay=0
-    declare -i polling_rate=1
+    source /etc/cleanshutd.conf
 fi
 
-if [ $shutdown_delay != 0 ]; then
-    declare -i blink_time=$shutdown_delay
+if grep -q "^[[:space:]]*disable_cleanshutd=1" /boot/config.txt; then
+    echo "cleanshutd is disabled in /boot/config.txt"
+    exit 1
+elif [ "$daemon_active" == 0 ]; then
+    echo "cleanshutd is disabled in /etc/cleanshutd.conf"
+    exit 1
+fi
+
+if [ "$shutdown_delay" != 0 ]; then
+    blink_time=$shutdown_delay
 else
     blink_time=0.1
 fi
@@ -62,53 +53,59 @@ fi
 raspi-gpio set $trigger_pin ip pu
 echo "monitoring BCM $trigger_pin"
 
-pin_state() {
-    raspi-gpio get $trigger_pin | grep -c "level=0 fsel=0 func=INPUT"
+trigger_pin_low() {
+    raspi-gpio get $trigger_pin | grep -q "level=0 fsel=0 func=INPUT"
 }
 
 shutdown_trigger() {
-    if [ `pin_state` = 1 ]; then
+    if trigger_pin_low; then
         echo "BCM $trigger_pin asserted low"
         start=$SECONDS
 
-        while [ `pin_state` = 1 ]; do
+        while trigger_pin_low; do
             sleep 0.1
-            low_time=`expr $SECONDS - $start`
-            if [ $low_time -ge $hold_time ]; then
+            low_time=$[ $SECONDS - $start ]
+            if [ "$low_time" -ge "$hold_time" ]; then
                 break
             fi
         done
         echo "Held low for $low_time"
 
-        if [ $low_time -ge $hold_time ]; then
-            echo "BCM $trigger_pin held low" && return 0
-        else
-            return 1
+        if [ "$low_time" -ge "$hold_time" ]; then
+            echo "BCM $trigger_pin held low"
+            return 0
         fi
-    else
-        return 1
     fi
+    return 1
 }
 
+daemon="on"
 while true; do
-    while [ $daemon = "on" ]; do
+    while [ "$daemon" = "on" ]; do
         if shutdown_trigger; then
             msg="BCM $trigger_pin held low, system shutdown in $shutdown_delay minutes"
-            echo $msg && wall $msg
-            daemon="off" && shutdown -h +$shutdown_delay
+            echo $msg
+            wall $msg
+            daemon="off"
+            shutdown -h +$shutdown_delay
             break
         fi
         sleep $polling_rate
     done
 
-    while [ $daemon = "off" ]; do
-        if [ "$led_pin" != "off" ]; then
-            raspi-gpio set $led_pin op dl && sleep 0.1
-            raspi-gpio set $led_pin op dh && sleep $blink_time
-        fi
-        if ! [ -f /var/run/nologin ]; then
-            raspi-gpio set $trigger_pin ip pu && daemon="on"
+    while [ "$daemon" = "off" ]; do
+        if [ ! -f /var/run/nologin ]; then
+            raspi-gpio set $trigger_pin ip pu
+            daemon="on"
             break
+        fi
+        if [ "$led_pin" != "off" ]; then
+            raspi-gpio set $led_pin op dl
+            sleep 0.1
+            raspi-gpio set $led_pin op dh
+            sleep $blink_time
+        else
+            sleep $polling_rate
         fi
     done
 done
