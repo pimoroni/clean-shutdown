@@ -166,9 +166,9 @@ apt_pkg_install() {
 
 config_set() {
     if [ -n $defaultconf ]; then
-        sudo sed -i "s|$1=.*$|$1=$2|" $defaultconf
+        sudo sed -i "s|#\?$1=.*$|$1=$2|" $defaultconf
     else
-        sudo sed -i "s|$1=.*$|$1=$2|" $3
+        sudo sed -i "s|#\?$1=.*$|$1=$2|" $3
     fi
 }
 
