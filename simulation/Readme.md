@@ -22,3 +22,17 @@ The [BSS138 N-Channel Logic Level Enhancement Mode MOSFET simulation model](BSS1
 
 
 ## On-Off-Shim >5V Supply Voltage Extension Simulation
+<img width="959" alt="On-Off-Shim Schematic" src="https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/onoff_shim_irf9520_schematic.png">
+
+[Extended On-Off-Shim with IRF9520 LTspice schematic](https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/onoff_shim_irf9520_schematic.asc)
+
+
+Changes to the previous schematic:
+* 18V instead of 5V supply (V1)
+* U1 changed to [IRF9520](https://www.vishay.com/mosfets/list/product-91074/) power MOSFET
+* 5V voltage regulator (on HiFiBerry Amp2 board): V5 and S4
+* load at 18V supply: R11
+* U1 V_GS voltage clamp (IRF9520 is limited to 20V): 12V zener diode D3
+* current limiter for D3: R12
+
+<img width="959" alt="Extended On-Off-Shim Waves" src="https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/onoff_shim_irf9520_waves.png">
