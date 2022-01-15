@@ -15,7 +15,7 @@ The [BSS138 N-Channel Logic Level Enhancement Mode MOSFET simulation model](BSS1
 * on-off push button: voltage controlled switch (S3) controlled by supply V3 configured with piecewise-linear sequence; switched on for 0.5s at t=[10, 20, 30]s
 * Raspberry's on-board 3.3V regulator: voltage supply V2 and voltage controlled switch S1
 * Raspberry's shutdown request GPIO (input): R10 (just for modeling an input port to the Raspberry Pi block)
-* Raspberry's SW-controlled shutdown GPIO (output): voltage controlled switch S2 and voltage supply V4; switched on (logically 3s after shutwown request) for 0.5s at t=23s
+* Raspberry's SW-controlled shutdown GPIO (output): voltage controlled switch S2 and voltage supply V4; switched on (logically 3s after shutdown request) for 0.5s at t=23s
 * load at 5V and 3.3V supply: R6 and R7
 
 <img width="959" alt="On-Off-Shim Waves" src="https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/onoff_shim_waves.png">
