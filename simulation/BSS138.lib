@@ -1,0 +1,78 @@
+*BSS138 at Temp. Electrical Model
+*-------------------------------------
+.SUBCKT BSS138 20 10 30 50
+*20=DRAIN 10=GATE 30=SOURCE 50=VTEMP
+Rg 10 11x 1
+Rdu 12x 1 1u
+M1 2 1 4x 4x DMOS L=1u W=1u
+.MODEL DMOS NMOS(VTO=1.35 KP=1.1
++THETA=0.1 VMAX=1.5E5 LEVEL=3)
+Cgs 1 5x 22p
+Rd 20 4 2.3E-1 
+Dds 5x 4 DDS
+.MODEL DDS D(M=3.93E-1 VJ=9.28E-1 CJO=29p)
+Dbody 5x 20 DBODY
+.MODEL DBODY D(IS=1.65E-10 N=1.413586 RS=.00148 TT=18.3n)
+Ra 4 2 2.3E-1
+Rs 5x 5 0.5m
+Ls 5 30 0.5n
+M2 1 8 6 6 INTER
+E2 8 6 4 1 2
+.MODEL INTER NMOS(VTO=0 KP=10 LEVEL=1)
+Cgdmax 7 4 118p
+Rcgd 7 4 10meg
+Dgd 6 4 DGD
+Rdgd 6 4 10meg
+.MODEL DGD D(M=5.05E-1 VJ=6.16E-2 CJO=118p)
+M3 7 9 1 1 INTER
+E3 9 1 4 1 -2
+*ZX SECTION
+EOUT 4x 6x poly(2) (1x,0) (3x,0) 0 0 0 0 1
+FCOPY 0 3x VSENSE 1
+RIN 1x 0 1G
+VSENSE 6x 5x 0
+RREF 3x 0 10m
+*TEMP SECTION
+ED 101 0 VALUE {V(50,100)}
+VAMB 100 0 25
+EKP 1x 0 101 0 .45
+*VTO TEMP SECTION
+EVTO 102 0 101 0 .001
+EVT 12x 11x 102 0 1
+*DIODE THEMO BREAKDOWN SECTION
+EBL VB1 VB2 101 0 .08
+VBLK VB2 0 50
+D 20 DB1 DBLK
+.MODEL DBLK D(IS=1E-14 CJO=.1p RS=.1)
+EDB DB1 0 VB1 0 1
+.ENDS BSS138
+*BSS138 (Rev.A) 10/13/04 **ST
+
+
+*BSS138 ELECTRICAL MODEL (SOT-23 Single N-Ch DMOS)
+*-----------------------
+.SUBCKT  BSS138/FAI  20  10  30
+Rg     10    1    1
+M1      2    1    3    3    DMOS    L=1u   W=1u
+.MODEL DMOS NMOS (VTO={1.3*{-0.002*TEMP+1.05}}  KP={-0.0014*TEMP+0.685} 
++ THETA=0.086  VMAX=2.2E5  LEVEL=3)        
+Cgs     1    3    40p
+Rd     20    4    0.2 TC=0.0065
+Dds     3    4    DDS
+.MODEL     DDS    D(BV={50*{0.00084*TEMP+0.979}}   M=0.36  CJO=23p   VJ=0.8)
+Dbody   3   20    DBODY
+.MODEL   DBODY    D(IS=1.4E-13   N=1   RS=40m   TT=100n)
+Ra      4    2    0.3 TC=0.0065
+Rs      3    5    10m
+Ls      5    30   .5n
+M2      1    8    6    6   INTER
+E2      8    6    4    1   2
+.MODEL   INTER    NMOS(VTO=0  KP=10   LEVEL=1)
+Cgdmax  7    4    68p
+Rcgd    7    4    10meg
+Dgd     6    4    DGD
+Rdgd    4    6    10meg
+.MODEL     DGD    D(M=0.3   CJO=68p   VJ=0.4)
+M3      7    9    1    1   INTER
+E3      9    1    4    1   -2
+.ENDS 
