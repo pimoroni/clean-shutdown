@@ -4,7 +4,9 @@ Two [LTspice XVII](https://www.analog.com/en/design-center/design-tools-and-calc
 1. Starting from the schematic provided in https://github.com/pimoroni/clean-shutdown/issues/18#issuecomment-456816943, the original circuit was modeled.
 2. The circuit was modified to use an 18V supply with an additional 5V voltage regulator. The modification is targeted to the [HifiBerry Amp2](https://www.hifiberry.com/shop/boards/hifiberry-amp2/) Class D Audio Power Amplifier (with integrated 5V regulator for the Raspberry Pi), but could be used in other cases where a supply voltage >5V needs to be switched.
 
-The [BSS138 N-Channel Logic Level Enhancement Mode MOSFET simulation model](BSS138.lib) was downloaded from [onsemi's website](https://www.onsemi.com/design/resources/design-resources/models?rpn=BSS138).
+The [BSS138 N-Channel Logic Level Enhancement Mode MOSFET simulation model](https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/BSS138.lib) was downloaded from [onsemi's website](https://www.onsemi.com/design/resources/design-resources/models?rpn=BSS138).
+
+The [IRF9520 simulation model](https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/sihf9520.lib) was downloaded from [Vishay's website](https://www.vishay.com/mosfets/list/product-91074/).
 
 ## On-Off-Shim Simulation
 <img width="959" alt="On-Off-Shim Schematic" src="https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/onoff_shim_schematic.png">
