@@ -6,7 +6,7 @@ Two [LTspice XVII](https://www.analog.com/en/design-center/design-tools-and-calc
 
 The [BSS138 N-Channel Logic Level Enhancement Mode MOSFET simulation model](https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/BSS138.lib) was downloaded from [onsemi's website](https://www.onsemi.com/design/resources/design-resources/models?rpn=BSS138).
 
-The [IRF9520 simulation model](https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/sihf9520.lib) was downloaded from [Vishay's website](https://www.vishay.com/mosfets/list/product-91074/).
+The [IRF9520 P-Channel Power MOSFET simulation model](https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/sihf9520.lib) was downloaded from [Vishay's website](https://www.vishay.com/mosfets/list/product-91074/).
 
 ## On-Off-Shim Simulation
 <img width="959" alt="On-Off-Shim Schematic" src="https://github.com/matthias-bs/clean-shutdown/blob/master/simulation/onoff_shim_schematic.png">
