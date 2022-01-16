@@ -18,7 +18,7 @@ With those models, schematic symbols can be created as follows:
 ## On-Off-Shim Simulation
 <img width="959" alt="On-Off-Shim Schematic" src="onoff_shim_schematic.png">
 
-[On-Off-Shim LTspice schematic](onoff_shim_schematic.asc)
+[On-Off-Shim LTspice schematic](onoff_shim.asc)
 
 
 * on-off push button: voltage controlled switch (S3) controlled by supply V3 configured with piecewise-linear sequence; switched on for 0.5s at t=[10, 20, 30]s
@@ -33,7 +33,7 @@ With those models, schematic symbols can be created as follows:
 ## On-Off-Shim >5V Supply Voltage Extension Simulation
 <img width="959" alt="On-Off-Shim Schematic" src="onoff_shim_irf9520_schematic.png">
 
-[Extended On-Off-Shim with IRF9520 LTspice schematic](onoff_shim_irf9520_schematic.asc)
+[Extended On-Off-Shim with IRF9520 LTspice schematic](onoff_shim_irf9520.asc)
 
 
 Changes to the previous schematic:
